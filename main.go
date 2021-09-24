@@ -34,6 +34,9 @@ var (
 	smtpAddr = envOrStr("MH_SENDMAIL_SMTP_ADDR", "localhost:1025")
 )
 
+// set via -ldflags.
+var version = "development"
+
 func main() {
 	var verbose bool
 
@@ -51,7 +54,7 @@ func main() {
 	recip := flag.Args()
 
 	if verbose {
-		fmt.Fprintln(os.Stderr, smtpAddr, fromAddr)
+		fmt.Fprintln(os.Stderr, "mhsendmail", version, smtpAddr, fromAddr)
 	}
 
 	body, err := ioutil.ReadAll(os.Stdin)

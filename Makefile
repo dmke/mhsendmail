@@ -1,14 +1,21 @@
 VERSION=0.1.9
 
-all: deps release
+.PHONY: all
+all: release
 
-deps:
-	go get github.com/spf13/pflag
-
+.PHONY: release
 release: release-deps
-	gox -output="build/{{.Dir}}_{{.OS}}_{{.Arch}}" .
+	gox \
+		-osarch="!darwin/386" \
+		-ldflags="-s -w -X main.version=$(VERSION)" \
+		-asmflags="-trimpath" \
+		-output="build/{{.Dir}}_{{.OS}}_{{.Arch}}" \
+		.
 
+.PHONY: release-deps
 release-deps:
-	go get github.com/mitchellh/gox
+	go install github.com/mitchellh/gox@latest
 
-.PNONY: all release release-deps
+.PHONY: clean
+clean:
+	rm -rf build
