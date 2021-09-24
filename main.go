@@ -13,30 +13,28 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+var (
+	host = func() string {
+		if v, err := os.Hostname(); err != nil {
+			return v
+		}
+
+		return "localhost"
+	}()
+
+	username = func() string {
+		if user, _ := user.Current(); user != nil && user.Username != "" {
+			return user.Username
+		}
+
+		return "nobody"
+	}()
+
+	fromAddr = envOrStr("MH_SENDMAIL_FROM", username+"@"+host)
+	smtpAddr = envOrStr("MH_SENDMAIL_SMTP_ADDR", "localhost:1025")
+)
+
 func main() {
-	host, err := os.Hostname()
-	if err != nil {
-		host = "localhost"
-	}
-
-	username := "nobody"
-	user, err := user.Current()
-	if err == nil && user != nil && len(user.Username) > 0 {
-		username = user.Username
-	}
-
-	fromAddr := username + "@" + host
-	smtpAddr := "localhost:1025"
-	var recip []string
-
-	// defaults from envars if provided
-	if len(os.Getenv("MH_SENDMAIL_SMTP_ADDR")) > 0 {
-		smtpAddr = os.Getenv("MH_SENDMAIL_SMTP_ADDR")
-	}
-	if len(os.Getenv("MH_SENDMAIL_FROM")) > 0 {
-		fromAddr = os.Getenv("MH_SENDMAIL_FROM")
-	}
-
 	var verbose bool
 
 	// override defaults from cli flags
@@ -50,7 +48,7 @@ func main() {
 	flag.Parse()
 
 	// allow recipient to be passed as an argument
-	recip = flag.Args()
+	recip := flag.Args()
 
 	if verbose {
 		fmt.Fprintln(os.Stderr, smtpAddr, fromAddr)
@@ -76,7 +74,14 @@ func main() {
 
 	err = smtp.SendMail(smtpAddr, nil, fromAddr, recip, body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error sending mail")
-		log.Fatal(err)
+		log.Fatalf("error sending mail: %v", err)
 	}
+}
+
+func envOrStr(name, fallback string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+
+	return fallback
 }
